@@ -1,1 +1,87 @@
-Hello World
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #login-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(15, 12, 12, 0.1);
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4caf50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div id="login-container">
+        <h2>Login</h2>
+        <input type="text" id="username" placeholder="Username or Email">
+        <input type="password" id="password" placeholder="Password">
+        <button onclick="login()">Login</button>
+        <p id="error-message" style="color: red;"></p>
+    </div>
+
+    <script>
+        function login() {
+            const usernameOrEmail = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Base64 encode the credentials for Basic Authentication
+            const base64Credentials = btoa(`${usernameOrEmail}:${password}`);
+
+            // Make a POST request to the signin endpoint
+            fetch('https://01.kood.tech/api/auth/signin', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Basic ${base64Credentials}`,
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Invalid credentials');
+                }
+                return response.text(); // Use response.text() to get the raw JWT string
+            })
+            .then(jwtToken => {
+                // Log the token for debugging
+                console.log('JWT Token (after login):', jwtToken);
+
+                // Store the JWT token (you may want to use a more secure storage method)
+                localStorage.setItem('jwtToken', jwtToken);
+
+                // Redirect to the profile page or perform any other actions
+                window.location.href = './profile.html'; // Adjust the path accordingly
+            })
+            .catch(error => {
+                console.error('Error during login:', error);
+            });
+        }
+    </script>
+</body>
+</html>

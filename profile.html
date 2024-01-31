@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+    }
+
+    #profile-container {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      text-align: center;
+    }
+
+    button {
+      background-color: #4caf50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    #xp-amounts {
+      margin-top: 20px;
+    }
+
+    #sections-container {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+
+    #charts-section {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 5px
+    }
+
+    #user-info-section,
+    #latest-projects-section,
+    #failed-tries,
+    #audit-chart,
+    #xp-bar-chart {
+      flex: 1;
+      background-color: #f0f0f0;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 5px;
+      box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+
+    #user-info-section h3,
+    #latest-projects-section h3,
+    #failed-tries h3{
+      margin-bottom: 10px;
+    }
+  </style>
+
+  <!-- Import D3 library -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- Import the queries.js script as a module -->
+  <script src="queries.js" type="module"></script>
+</head>
+
+<body>
+  <div id="profile-container">
+    <h2>Welcome to Your Profile</h2>
+
+    <!-- Additional sections -->
+    <div id="sections-container">
+      <!-- User Info section -->
+      <div id="user-info-section">
+        <h3>User Info</h3>
+        <div id="user-info"></div>
+      </div>
+
+      <!-- Latest Projects section -->
+      <div id="latest-projects-section">
+        <h3>Latest Projects</h3>
+        <div id="latest-projects"></div>
+      </div>
+
+      <!-- Latest Audited section -->
+      <div id="failed-tries">
+        <h3>Number of Failed Piscine Tasks</h3>
+        <div id="failed-tasks-info"></div>
+      </div>
+    </div>
+
+    <!-- Charts section -->
+    <div id="charts-section">
+      <!-- Charts -->
+      <div id="audit-chart">
+        <h3>Audit Ratio</h3>
+        <div id="audit-info"></div>
+      </div>
+
+      <div id="xp-bar-chart">
+        <h3>XP Types</h3>
+        <div id="xp-amounts"></div>
+      </div>
+    </div>
+
+    <!-- Logout button -->
+    <button onclick="logout()">Logout</button>
+  </div>
+  <script>
+    function logout() {
+      // Remove the JWT token from local storage
+      localStorage.removeItem('jwtToken');
+      // Redirect to the login page or perform any other actions
+      window.location.href = '/index.html'; // Adjust the path accordingly
+    }
+  </script>
+  <script type="module">
+    import { queryUserXPDiv1, queryUserXPJs, queryUserXPGo, queryAuditsDone, queryAuditsReceived } from './queries.js';
+    import { createSimplePieChart, createSimpleBarChart } from './charts.js';
+    import { queryUserInfo, queryLast3tasks, queryJSTasksFailed, queryGOTasksFailed } from './queries.js';
+
+    async function fetchXPAmount(jwtToken, query) {
+      try {
+        const response = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query,
+          }),
+        });
+
+        const data = await response.json();
+        return data?.data?.user?.[0]?.xpAmount?.aggregate?.sum?.amount;
+      } catch (error) {
+        console.error('Error fetching XP amount:', error);
+      }
+    }
+
+    function displayXPAmounts(xpAmounts) {
+      const xpAmountsContainer = document.getElementById('xp-amounts');
+
+      xpAmounts.forEach(({ name, xp }) => {
+        const xpElement = document.createElement('p');
+        xpElement.textContent = `${name} XP: ${xp || 'Not available'}`;
+        xpAmountsContainer.appendChild(xpElement);
+      });
+    }
+
+    async function fetchAndDisplayFailedTasks(jwtToken) {
+      try {
+        const responseJS = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryJSTasksFailed,
+          }),
+        });
+
+        const dataJS = await responseJS.json();
+        const failedJSTasksCount = dataJS?.data?.user?.[0]?.results?.length || 0;
+
+        const responseGO = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryGOTasksFailed,
+          }),
+        });
+
+        const dataGO = await responseGO.json();
+        const failedGOTasksCount = dataGO?.data?.user?.[0]?.results?.length || 0;
+
+        const failedTasksInfoContainer = document.getElementById('failed-tasks-info');
+        failedTasksInfoContainer.innerHTML = `
+          <p>JavaScript Tasks Failed: ${failedJSTasksCount}</p>
+          <p>Go Tasks Failed: ${failedGOTasksCount}</p>
+        `;
+      } catch (error) {
+        console.error('Error fetching failed tasks information:', error);
+      }
+    }
+
+    async function fetchAndDisplayLatestProjects(jwtToken) {
+      try {
+        const response = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryLast3tasks,
+          }),
+        });
+
+        const data = await response.json();
+        const latestProjectsContainer = document.getElementById('latest-projects');
+        const projects = data?.data?.user?.[0]?.transactions;
+
+        if (projects && projects.length > 0) {
+          const projectsList = document.createElement('ul');
+          projects.forEach(project => {
+            const projectItem = document.createElement('li');
+            projectItem.textContent = project.path || 'Unknown Project';
+            projectsList.appendChild(projectItem);
+          });
+          latestProjectsContainer.innerHTML = '';
+          latestProjectsContainer.appendChild(projectsList);
+        } else {
+          latestProjectsContainer.innerHTML = '<p>No projects found.</p>';
+        }
+      } catch (error) {
+        console.error('Error fetching latest projects:', error);
+      }
+    }
+
+    async function fetchUserInfo() {
+      try {
+        const jwtToken = localStorage.getItem('jwtToken');
+        const response = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryUserInfo,
+          }),
+        });
+
+        const data = await response.json();
+        const userInfoContainer = document.getElementById('user-info');
+        const user = data?.data?.user?.[0];
+        userInfoContainer.innerHTML = `
+          <p>ID: ${user.id || 'Not available'}</p>
+          <p>Login: ${user.login || 'Not available'}</p>
+          <p>First Name: ${user.firstName || 'Not available'}</p>
+          <p>Last Name: ${user.lastName || 'Not available'}</p>
+          <p>Email: ${user.email || 'Not available'}</p>`;
+
+        const xpDiv1 = await fetchXPAmount(jwtToken, queryUserXPDiv1);
+        const xpJs = await fetchXPAmount(jwtToken, queryUserXPJs);
+        const xpGo = await fetchXPAmount(jwtToken, queryUserXPGo);
+
+        displayXPAmounts([
+          { name: 'Div 1', xp: xpDiv1 },
+          { name: 'JS Piscine', xp: xpJs },
+          { name: 'Go Piscine', xp: xpGo },
+        ]);
+
+        createSimpleBarChart(xpGo, xpJs, xpDiv1);
+        fetchAndDisplayAudits(jwtToken);
+        fetchAndDisplayLatestProjects(jwtToken);
+        fetchAndDisplayFailedTasks(jwtToken);
+      } catch (error) {
+        console.error('Error fetching user information:', error);
+      }
+    }
+
+    async function fetchAndDisplayAudits(jwtToken) {
+      try {
+        const responseDone = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryAuditsDone,
+          }),
+        });
+
+        const responseReceived = await fetch('https://01.kood.tech/api/graphql-engine/v1/graphql', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwtToken.replace(/"/g, '')}`,
+          },
+          body: JSON.stringify({
+            query: queryAuditsReceived,
+          }),
+        });
+
+        const dataDone = await responseDone.json();
+        const dataReceived = await responseReceived.json();
+        const auditsDone = dataDone?.data?.transaction;
+        const auditsReceived = dataReceived?.data?.transaction;
+
+        createSimplePieChart(auditsDone.length, auditsReceived.length);
+
+        const auditInfoContainer = document.getElementById('audit-info');
+        auditInfoContainer.innerHTML = `
+          <p>Audits Done: ${auditsDone ? auditsDone.length : 0}</p>
+          <p>Audits Received: ${auditsReceived ? auditsReceived.length : 0}</p>`;
+      } catch (error) {
+        console.error('Error fetching audit information:', error);
+      }
+    }
+
+    function parseJwt(token) {
+      if (!token) {
+        throw new Error('Token is missing.');
+      }
+
+      const base64Url = token.split('.')[1];
+
+      if (!base64Url) {
+        throw new Error('Invalid token format.');
+      }
+
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = atob(base64);
+
+      return JSON.parse(decoded);
+    }
+
+    document.addEventListener('DOMContentLoaded', fetchUserInfo);
+
+  </script>
+</body>
+
+</html>
