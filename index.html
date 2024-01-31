@@ -79,8 +79,17 @@
                 window.location.href = './profile.html'; // Adjust the path accordingly
             })
             .catch(error => {
-                console.error('Error during login:', error);
-            });
+    console.error('Error during login:', error);
+
+    // Display an error message to the user
+    const errorMessageElement = document.getElementById('error-message');
+
+    if (error.message === 'Invalid credentials') {
+        errorMessageElement.textContent = 'Invalid username, email, or password';
+    } else {
+        errorMessageElement.textContent = 'An error occurred during login. Please try again later.';
+    }
+});
         }
     </script>
 </body>
