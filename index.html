@@ -61,6 +61,7 @@
                     'Authorization': `Basic ${base64Credentials}`,
                     'Content-Type': 'application/json',
                 },
+                mode: 'no-cors', // Add this line
             })
             .then(response => {
                 if (!response.ok) {
