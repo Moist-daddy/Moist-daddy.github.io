@@ -61,23 +61,21 @@
                     'Authorization': `Basic ${base64Credentials}`,
                     'Content-Type': 'application/json',
                 },
-                mode: 'no-cors', // Add this line
+                mode: 'no-cors',
             })
             .then(response => {
                 if (!response.ok) {
                     throw new Error('Invalid credentials');
                 }
-                return response.text(); // Use response.text() to get the raw JWT string
+                return response.text(); // response.text() to get the raw JWT string
             })
             .then(jwtToken => {
-                // Log the token for debugging
-                console.log('JWT Token (after login):', jwtToken);
 
-                // Store the JWT token (you may want to use a more secure storage method)
+                // Store the JWT token
                 localStorage.setItem('jwtToken', jwtToken);
 
-                // Redirect to the profile page or perform any other actions
-                window.location.href = './profile.html'; // Adjust the path accordingly
+                // Redirect to the profile page
+                window.location.href = './profile.html';
             })
             .catch(error => {
     console.error('Error during login:', error);

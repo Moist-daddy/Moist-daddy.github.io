@@ -69,10 +69,7 @@
     }
   </style>
 
-  <!-- Import D3 library -->
   <script src="https://d3js.org/d3.v7.min.js"></script>
-
-  <!-- Import the queries.js script as a module -->
   <script src="queries.js" type="module"></script>
 </head>
 
@@ -80,30 +77,24 @@
   <div id="profile-container">
     <h2>Welcome to Your Profile</h2>
 
-    <!-- Additional sections -->
     <div id="sections-container">
-      <!-- User Info section -->
       <div id="user-info-section">
         <h3>User Info</h3>
         <div id="user-info"></div>
       </div>
 
-      <!-- Latest Projects section -->
       <div id="latest-projects-section">
         <h3>Latest Projects</h3>
         <div id="latest-projects"></div>
       </div>
 
-      <!-- Latest Audited section -->
       <div id="failed-tries">
         <h3>Number of Failed Piscine Tasks</h3>
         <div id="failed-tasks-info"></div>
       </div>
     </div>
 
-    <!-- Charts section -->
     <div id="charts-section">
-      <!-- Charts -->
       <div id="audit-chart">
         <h3>Audit Ratio</h3>
         <div id="audit-info"></div>
@@ -115,15 +106,14 @@
       </div>
     </div>
 
-    <!-- Logout button -->
     <button onclick="logout()">Logout</button>
   </div>
   <script>
     function logout() {
       // Remove the JWT token from local storage
       localStorage.removeItem('jwtToken');
-      // Redirect to the login page or perform any other actions
-      window.location.href = '/index.html'; // Adjust the path accordingly
+      // Redirect to the login page
+      window.location.href = '/index.html';
     }
   </script>
   <script type="module">
